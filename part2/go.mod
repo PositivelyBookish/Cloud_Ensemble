@@ -1,4 +1,4 @@
-module part2/proto
+module github.com/hjani-2003/Cloud_Computing_Project/tree/harman/part2
 
 go 1.23.1
 

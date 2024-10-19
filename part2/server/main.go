@@ -4,8 +4,7 @@ package main
 import (
 	"log"
 	"net"
-	pb "part2/proto"
-
+	pb "github.com/hjani-2003/Cloud_Computing_Project/tree/harman/part2/proto"
 	"google.golang.org/grpc"
 )
 
