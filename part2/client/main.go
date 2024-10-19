@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	pb "part2/proto"
+	pb "github.com/hjani-2003/Cloud_Computing_Project/tree/harman/part2/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -18,10 +18,11 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()	
-	// client := pb.NewGreetServiceClient(conn)
+	client := pb.NewGreetServiceClient(conn)
 	// names := &pb.NamesList {
 	// 	Names: []string{"Akhil", "Alice", "Bob"},
 	// }
 
-	// callSayHello(client)
+	callSayHello(client)
+	// callSayHelloServerStream(client, names)
 }

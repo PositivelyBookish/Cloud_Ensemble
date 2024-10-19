@@ -5,7 +5,7 @@ import(
 	"log"
 	"time"
 	
-	pb "part2/proto"
+	pb "github.com/hjani-2003/Cloud_Computing_Project/tree/harman/part2/proto"
 )
 
 func callSayHello(client pb.GreetServiceClient) {
