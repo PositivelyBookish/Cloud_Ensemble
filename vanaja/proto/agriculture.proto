@@ -1,0 +1,22 @@
+syntax = "proto3";
+option go_package = "./proto";
+package agriculture_service;
+
+service AgricultureService {
+  rpc AnalyzePatterns(stream AgricultureData) returns (stream AnalysisResult);
+}
+
+message AgricultureData {
+  int32 id = 1;
+  string crop_type = 2;
+  float temperature = 3;
+  float humidity = 4;
+  float soil_moisture = 5;
+  float yield_amount = 6;
+}
+
+message AnalysisResult {
+  int32 id = 1;
+  string message = 2;
+  float predicted_yield = 3;
+}
