@@ -1,29 +1,31 @@
 package main
 
 import (
-	"context"
+	// "context"
 	"fmt"
 	"log"
 	"net"
 
-	pb "https://github.com/PositivelyBookish/Cloud_Ensemble/proto"
+	pb "Project/vanaja/proto"
 
 	"google.golang.org/grpc"
 )
 
 // Define the server struct that implements the service methods
 type server struct {
-	pb.UnimplementedAgricultureServiceServer
+	pb.AgricultureServiceServer
 }
 
 // Example service method implementation
-func (s *server) GetPattern(ctx context.Context, req *pb.PatternRequest) (*pb.PatternResponse, error) {
-	// Example logic for handling pattern recognition in agricultural data
-	response := &pb.PatternResponse{
-		Message: "Pattern found in dataset!",
-	}
-	return response, nil
-}
+// func (s *server) AnalyzePatterns(ctx context.Context, ) (*pb.AgricultureService_AnalyzePatternsServer, error) {}
+// Example logic for handling pattern recognition in agricultural data
+// response := new(&pb.AnalysisResult{
+// 	Id: 1,
+// 	Message: "Pattern found in dataset!",
+// 	PredictedYield: 400,
+// })
+// return response, nil
+// }
 
 func main() {
 	listener, err := net.Listen("tcp", ":50051")

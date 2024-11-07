@@ -6,8 +6,8 @@ import (
 	"log"
 	"math/rand"
 	"time"
-
-	agriculture_service "path/to/your/generated/proto"
+	agriculture_service "Project/vanaja/proto"
+	// agriculture_service "github.com/hjani-2003/Cloud_Computing_Project/tree/vanaja/vanaja/proto"
 
 	"google.golang.org/grpc"
 )

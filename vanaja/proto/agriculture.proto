@@ -11,7 +11,7 @@ message AgricultureData {
   string crop_type = 2;
   float temperature = 3;
   float humidity = 4;
-  float soil_moisture = 5;
+  float soil_moisture = 5; 
   float yield_amount = 6;
 }
 
