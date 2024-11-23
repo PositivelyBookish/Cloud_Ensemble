@@ -18,14 +18,18 @@ type server struct {
 }
 
 // Function to classify the image using a Python script for each model
-func classifyImageWithModel(imageData []byte, modelName string) (string, float32, error) {
+func classifyImageWithModel(imageData *agriculture_service.ImageData, modelName string) (string, float32, error) {
 	// Save the image to a temporary file
-	imagePath := "/tmp/temp_image.jpg"
-	err := os.WriteFile(imagePath, imageData, 0644)
+	log.Printf("Received image data of size: %d bytes for image ID: %d", len(imageData.Image), imageData.Id)
+
+	imagePath := fmt.Sprintf("/tmp/temp_image_%d.jpg\n", imageData.Id)
+	log.Printf("Image Path : %s",imagePath)
+	err := os.WriteFile(imagePath, imageData.Image, 0644)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to save image: %v", err)
 	}
-	defer os.Remove(imagePath) // Clean up the image file after classification
+	log.Printf("\nImage saved")
+	// defer os.Remove(imagePath) // Clean up the image file after classification
 
 	// Use Python to classify the image with the model
 	// You can replace "model_script.py" with the actual Python script for the model
@@ -67,7 +71,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 
 		for _, modelName := range modelNames {
 			// Classify the image with the current model
-			label, confidence, err := classifyImageWithModel(imageData.Image, modelName)
+			label, confidence, err := classifyImageWithModel(imageData, modelName)
 			if err != nil {
 				return fmt.Errorf("failed to classify image with model %s: %v", modelName, err)
 			}

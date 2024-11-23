@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"google.golang.org/grpc"
 )
@@ -66,8 +67,12 @@ func main() {
 
 		// Send image data to the server
 		for {
+			// Generate a unique ID (e.g., using timestamp or a counter)
+			imageID := time.Now().Unix() // Get the current Unix timestamp for a unique ID
+		
+			// Create the ImageData object with the unique ID
 			data := &agriculture_service.ImageData{
-				Id:    1234,  // Unique image ID (you can use a counter or timestamp)
+				Id:    int32(imageID),  // Assign the unique image ID
 				Image: imageData,
 			}
 
