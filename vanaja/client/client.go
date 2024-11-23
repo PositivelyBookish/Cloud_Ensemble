@@ -1,62 +1,106 @@
 package main
 
 import (
+	agriculture_service "Project/vanaja/protobuf/proto"
 	"context"
+	"fmt"
 	"io"
 	"log"
-	"math/rand"
-	"time"
-	agriculture_service "Project/vanaja/proto"
-	// agriculture_service "github.com/hjani-2003/Cloud_Computing_Project/tree/vanaja/vanaja/proto"
+	"os"
 
 	"google.golang.org/grpc"
 )
 
+// Function to read an image file and return it as a byte slice
+func readImageFile(imagePath string) ([]byte, error) {
+	file, err := os.Open(imagePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open image file: %w", err)
+	}
+	defer file.Close()
+
+	// Read the entire file into a byte slice
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file info: %w", err)
+	}
+
+	fileSize := fileInfo.Size()
+	buffer := make([]byte, fileSize)
+
+	_, err = file.Read(buffer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read image file: %w", err)
+	}
+
+	return buffer, nil
+}
+
 func main() {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
+	// Set up the connection to the server
+	conn, err := grpc.Dial("0.0.0.0:50051", grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
 	defer conn.Close()
+	log.Println("Successfully connected to the server at 0.0.0.0:50051")
 
-	client := agriculture_service.NewAgricultureServiceClient(conn)
+	client := agriculture_service.NewImageClassificationServiceClient(conn)
 
-	// Open bidirectional stream
-	stream, err := client.AnalyzePatterns(context.Background())
+	// Open a bidirectional stream
+	stream, err := client.ClassifyImage(context.Background())
 	if err != nil {
 		log.Fatalf("Error creating stream: %v", err)
 	}
 
-	// Goroutine to send data to server
+	// Goroutine to send image data to the server
 	go func() {
+		// Replace with the path to your image
+		imagePath := "/home/cloud-ensemble1/Desktop/bidi/Cloud_Computing_Project/vanaja/test_images/apple_apple_scab.jpg"
+
+		// Read the image file
+		imageData, err := readImageFile(imagePath)
+		if err != nil {
+			log.Fatalf("Failed to read image: %v", err)
+		}
+
+		// Send image data to the server
 		for {
-			// Generate random agriculture data
-			data := &agriculture_service.AgricultureData{
-				Id:           int32(rand.Intn(1000)),
-				CropType:     "Wheat",
-				Temperature:  25.0 + rand.Float32()*5,
-				Humidity:     60.0 + rand.Float32()*10,
-				SoilMoisture: 30.0 + rand.Float32()*5,
-				YieldAmount:  100.0 + rand.Float32()*20,
+			data := &agriculture_service.ImageData{
+				Id:    1234,  // Unique image ID (you can use a counter or timestamp)
+				Image: imageData,
 			}
 
-			// Send data to server
+			// Send image to the server in a bidirectional stream
 			if err := stream.Send(data); err != nil {
-				log.Fatalf("Failed to send data: %v", err)
+				log.Fatalf("Failed to send image data: %v", err)
 			}
-			time.Sleep(1 * time.Second)
+			log.Printf("Sent image data with ID %d", data.Id)
+
+			// Wait for the result from the server
+			res, err := stream.Recv()
+			if err == io.EOF {
+				// Server finished sending results
+				log.Println("Server closed the connection.")
+				break
+			}
+			if err != nil {
+				log.Fatalf("Failed to receive response: %v", err)
+			}
+
+			// Process and log the classification results
+			log.Printf("Received results for image ID %d:", res.Id)
+			for _, result := range res.Results {
+				log.Printf("Model: %s, Predicted Label: %s, Confidence: %.2f",
+					result.ModelName, result.PredictedLabel, result.ConfidenceScore)
+			}
+			log.Printf("Overall message: %s", res.OverallMessage)
+
+			// You can choose to send the next image here if needed
+			// Add a sleep or logic to send more images if necessary
 		}
 	}()
 
-	// Receive analysis results from server
-	for {
-		res, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatalf("Error receiving data: %v", err)
-		}
-		log.Printf("Received pattern analysis for crop ID %d: %s (Predicted Yield: %.2f)", res.Id, res.Message, res.PredictedYield)
-	}
+	// Keep the main routine running until the stream is closed
+	select {}
 }
