@@ -57,7 +57,7 @@ func main() {
 	// Goroutine to send image data to the server
 	go func() {
 		// Replace with the path to your image
-		imagePath := "/home/cloud-ensemble1/Desktop/bidi/Cloud_Computing_Project/vanaja/test_images/apple_apple_scab.jpg"
+		imagePath := "/home/cloud-ensemble1/Desktop/bidi/Cloud_Computing_Project/vanaja/test_images/Tomato___Tomato_mosaic_virus.jpg"
 
 		// Read the image file
 		imageData, err := readImageFile(imagePath)

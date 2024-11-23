@@ -3,7 +3,7 @@ package main
 import (
 	agriculture_service "Project/vanaja/protobuf/proto" // Correct import path
 	"fmt"
-	"io"
+	// "io"
 	"log"
 	"os"
 	"os/exec"
@@ -17,86 +17,56 @@ type server struct {
 	agriculture_service.UnimplementedImageClassificationServiceServer
 }
 
-// Function to classify the image using a Python script for each model
-func classifyImageWithModel(imageData *agriculture_service.ImageData, modelName string) (string, float32, error) {
+func classifyImageWithAllScripts(imageData *agriculture_service.ImageData) ([]*agriculture_service.ModelResult, error) {
 	// Save the image to a temporary file
-	log.Printf("Received image data of size: %d bytes for image ID: %d", len(imageData.Image), imageData.Id)
-
-	imagePath := fmt.Sprintf("/tmp/temp_image_%d.jpg\n", imageData.Id)
-	log.Printf("Image Path : %s",imagePath)
+	imagePath := fmt.Sprintf("/tmp/temp_image_%d.jpg", imageData.Id)
+	log.Printf("%s",imagePath)
 	err := os.WriteFile(imagePath, imageData.Image, 0644)
 	if err != nil {
-		return "", 0, fmt.Errorf("failed to save image: %v", err)
+		return nil, fmt.Errorf("failed to save image: %v", err)
 	}
-	log.Printf("\nImage saved")
-	// defer os.Remove(imagePath) // Clean up the image file after classification
+	// defer os.Remove(imagePath) // Ensure cleanup
 
-	// Use Python to classify the image with the model
-	// You can replace "model_script.py" with the actual Python script for the model
-	cmd := exec.Command("python3", fmt.Sprintf("model_script_%s.py", modelName), imagePath)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to classify image: %v", err)
+	// Define the Python scripts to execute
+	scripts := []string{
+		fmt.Sprintf("../pyScripts/alexnet.py"),
+		fmt.Sprintf("../pyScripts/mobilevnet.py"),
+		fmt.Sprintf("../pyScripts/convnext_tiny.py"),
 	}
 
-	// Parse the output (assuming it outputs "label confidence")
-	var predictedLabel string
-	var confidenceScore float32
-	_, err = fmt.Sscanf(string(output), "%s %f", &predictedLabel, &confidenceScore)
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to parse classification result: %v", err)
-	}
+	results := make([]*agriculture_service.ModelResult, 0)
 
-	return predictedLabel, confidenceScore, nil
-}
+	// Execute each script
+	for _, script := range scripts {
+		log.Printf("Executing script: %s for image ID: %d", script, imageData.Id)
 
-// Implement the bidirectional streaming RPC method
-func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationService_ClassifyImageServer) error {
-	// Process images sent by the client
-	for {
-		// Receive the image data from the client
-		imageData, err := stream.Recv()
-		if err == io.EOF {
-			// The client closed the stream
-			log.Println("Client closed the connection.")
-			return nil
-		}
+		// Execute the script
+		cmd := exec.Command("python3", script, imagePath)
+		output, err := cmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("failed to receive image data: %v", err)
+			log.Printf("Script %s execution failed: %v\nOutput: %s", script, err, string(output))
+			return nil, fmt.Errorf("script %s failed: %v", script, err)
 		}
 
-		// Process the image with each model
-		modelResults := make([]*agriculture_service.ModelResult, 0)
-		modelNames := []string{"model1", "model2", "model3"} // Replace with actual model names
-
-		for _, modelName := range modelNames {
-			// Classify the image with the current model
-			label, confidence, err := classifyImageWithModel(imageData, modelName)
-			if err != nil {
-				return fmt.Errorf("failed to classify image with model %s: %v", modelName, err)
-			}
-
-			// Store the result
-			modelResults = append(modelResults, &agriculture_service.ModelResult{
-				ModelName:      modelName,
-				PredictedLabel: label,
-				ConfidenceScore: confidence,
-			})
+		// Parse the output (assuming it returns "label confidence")
+		var predictedLabel string
+		var confidenceScore float32
+		_, err = fmt.Sscanf(string(output), "%s %f", &predictedLabel, &confidenceScore)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse output from script %s: %v", script, err)
 		}
 
-		// Prepare the response to send back to the client
-		response := &agriculture_service.ClassificationResults{
-			Id:      imageData.Id,
-			Results: modelResults,
-			OverallMessage: "Image classification completed successfully.",
-		}
-
-		// Send the results back to the client
-		if err := stream.Send(response); err != nil {
-			return fmt.Errorf("failed to send response to client: %v", err)
-		}
+		// Append the result
+		results = append(results, &agriculture_service.ModelResult{
+			ModelName:       script,
+			PredictedLabel:  predictedLabel,
+			ConfidenceScore: confidenceScore,
+		})
 	}
+
+	return results, nil
 }
+
 
 func main() {
 	// Set up the server
