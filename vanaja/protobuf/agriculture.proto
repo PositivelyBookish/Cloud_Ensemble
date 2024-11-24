@@ -7,7 +7,7 @@ service ImageClassificationService {
   // Bidirectional streaming RPC
   rpc ClassifyImage(stream ImageData) returns (stream ClassificationResults);
 }
-
+ 
 // Message for image input
 message ImageData {
   int32 id = 1;         // Unique request ID

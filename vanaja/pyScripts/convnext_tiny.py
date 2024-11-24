@@ -33,11 +33,11 @@ classification_types = [
 model_path = '../models/convnext_tiny-model-89.pth'  # Update this path
 
 # Initialize ConvNeXt-Tiny
-model = models.convnext_tiny(pretrained=False)
+model = models.convnext_tiny(weights="DEFAULT")
 model.classifier[2] = nn.Linear(model.classifier[2].in_features, len(classification_types))  # Modify final layer for 15 classes
 
 # Load the pre-trained model state dict
-state_dict = torch.load(model_path, map_location=torch.device('cpu'))
+state_dict = torch.load(model_path, weights_only=True, map_location=torch.device('cpu'))
 if 'classifier.2.weight' in state_dict:
     del state_dict['classifier.2.weight']
 if 'classifier.2.bias' in state_dict:
@@ -80,44 +80,44 @@ dataset = CustomImageDataset(image_paths, transform)
 dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
 
 # Fine-tune the model on a small dataset (or single image)
-def fine_tune_on_single_image(model, dataloader, num_epochs=10, lr=1e-4):
-    """
-    Fine-tunes the ConvNeXt model on a single image or small dataset.
+# def fine_tune_on_single_image(model, dataloader, num_epochs=10, lr=1e-4):
+#     """
+#     Fine-tunes the ConvNeXt model on a single image or small dataset.
 
-    Parameters:
-        model (nn.Module): ConvNeXt model to fine-tune.
-        dataloader (DataLoader): DataLoader for the input image(s).
-        num_epochs (int): Number of epochs for fine-tuning.
-        lr (float): Learning rate.
+#     Parameters:
+#         model (nn.Module): ConvNeXt model to fine-tune.
+#         dataloader (DataLoader): DataLoader for the input image(s).
+#         num_epochs (int): Number of epochs for fine-tuning.
+#         lr (float): Learning rate.
 
-    Returns:
-        nn.Module: Fine-tuned model.
-    """
-    # Unfreeze all layers for fine-tuning
-    for param in model.features.parameters():
-        param.requires_grad = True
+#     Returns:
+#         nn.Module: Fine-tuned model.
+#     """
+#     # Unfreeze all layers for fine-tuning
+#     for param in model.features.parameters():
+#         param.requires_grad = True
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    criterion = nn.CrossEntropyLoss()
+#     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+#     criterion = nn.CrossEntropyLoss()
 
-    # Fine-tune for a few epochs
-    for epoch in range(num_epochs):
-        model.train()
-        running_loss = 0.0
-        for inputs, _ in dataloader:
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, torch.tensor([0]))  # Assume the true label is 0 (can be changed for specific task)
-            loss.backward()
-            optimizer.step()
-            running_loss += loss.item()
+#     # Fine-tune for a few epochs
+#     for epoch in range(num_epochs):
+#         model.train()
+#         running_loss = 0.0
+#         for inputs, _ in dataloader:
+#             optimizer.zero_grad()
+#             outputs = model(inputs)
+#             loss = criterion(outputs, torch.tensor([0]))  # Assume the true label is 0 (can be changed for specific task)
+#             loss.backward()
+#             optimizer.step()
+#             running_loss += loss.item()
 
-        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {running_loss:.4f}")
+#         print(f"Epoch {epoch+1}/{num_epochs}, Loss: {running_loss:.4f}")
 
-    return model
+#     return model
 
 # Fine-tune on the small dataset (single image)
-model = fine_tune_on_single_image(model, dataloader, num_epochs=10, lr=1e-5)
+# model = fine_tune_on_single_image(model, dataloader, num_epochs=10, lr=1e-5)
 
 # Prediction function for fine-tuned model
 def predict_image(model, image_path):

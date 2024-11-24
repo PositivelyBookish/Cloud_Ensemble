@@ -35,9 +35,9 @@ if not os.path.exists(model_path):
     print("Model file not found:", model_path)
     exit(1)
 
-model = models.alexnet(pretrained=False)
+model = models.alexnet(weights="DEFAULT")
 model.classifier[6] = nn.Linear(4096, 15)
-state_dict = torch.load(model_path, map_location=torch.device('cpu'))
+state_dict = torch.load(model_path, weights_only=True, map_location=torch.device('cpu'))
 del state_dict['classifier.6.weight']
 del state_dict['classifier.6.bias']
 model.load_state_dict(state_dict, strict=False)

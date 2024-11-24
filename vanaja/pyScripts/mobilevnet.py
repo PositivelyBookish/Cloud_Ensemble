@@ -34,11 +34,11 @@ classification_types = [
 model_path = '../models/mobilenet_v3_small-model-94.pth'  # Update this path
 
 # Initialize MobileNetV3 Small
-model = models.mobilenet_v3_small(pretrained=False)
+model = models.mobilenet_v3_small(weights="DEFAULT")
 model.classifier[3] = nn.Linear(model.classifier[3].in_features, 15)  # Adjust final layer for 15 classes
 
 # Load state dictionary
-state_dict = torch.load(model_path, map_location=torch.device('cpu'))
+state_dict = torch.load(model_path, weights_only=True, map_location=torch.device('cpu'))
 del state_dict['classifier.3.weight']  # Remove incompatible weights
 del state_dict['classifier.3.bias']
 model.load_state_dict(state_dict, strict=False)

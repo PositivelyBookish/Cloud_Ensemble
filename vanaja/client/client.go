@@ -1,7 +1,7 @@
 package main
 
 import (
-	agriculture_service "Project/vanaja/protobuf/proto"
+	agriculture_service "Project/vanaja/protobuf/proto" // Correct import path
 	"context"
 	"fmt"
 	"io"
@@ -43,7 +43,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
-	defer conn.Close()
+	defer conn.Close() // Ensure the connection is closed when done
 	log.Println("Successfully connected to the server at 0.0.0.0:50051")
 
 	client := agriculture_service.NewImageClassificationServiceClient(conn)
@@ -54,58 +54,50 @@ func main() {
 		log.Fatalf("Error creating stream: %v", err)
 	}
 
-	// Goroutine to send image data to the server
-	go func() {
-		// Replace with the path to your image
-		imagePath := "/home/cloud-ensemble1/Desktop/bidi/Cloud_Computing_Project/vanaja/test_images/Tomato___Tomato_mosaic_virus.jpg"
+	// Read and send the image
+	imagePath := "/home/harman/Desktop/cloud_project_copy2/Cloud_Computing_Project/vanaja/test_images/Tomato___Tomato_mosaic_virus.jpg"
+	imageData, err := readImageFile(imagePath)
+	if err != nil {
+		log.Fatalf("Failed to read image: %v", err)
+	}
 
-		// Read the image file
-		imageData, err := readImageFile(imagePath)
-		if err != nil {
-			log.Fatalf("Failed to read image: %v", err)
+	// Generate a unique ID (e.g., using timestamp or a counter)
+	imageID := time.Now().Unix()
+
+	// Create the ImageData object with the unique ID
+	data := &agriculture_service.ImageData{
+		Id:    int32(imageID),
+		Image: imageData,
+	}
+
+	// Send image data to the server
+	if err := stream.Send(data); err != nil {
+		log.Fatalf("Failed to send image data: %v", err)
+	}
+	log.Printf("Sent image data with ID %d", data.Id)
+
+	// Wait for the result from the server
+	res, err := stream.Recv()
+	if err == io.EOF {
+		// Server finished sending results
+		log.Println("Server closed the connection.")
+	} else if err != nil {
+		log.Fatalf("Failed to receive response: %v", err)
+	} else {
+		// Process and log the classification results
+		log.Printf("Received results for image ID %d:", res.Id)
+		for _, result := range res.Results {
+			log.Printf("Model: %s, Predicted Label: %s, Confidence: %.2f",
+				result.ModelName, result.PredictedLabel, result.ConfidenceScore)
 		}
+		log.Printf("Overall message: %s", res.OverallMessage)
+	}
 
-		// Send image data to the server
-		for {
-			// Generate a unique ID (e.g., using timestamp or a counter)
-			imageID := time.Now().Unix() // Get the current Unix timestamp for a unique ID
-		
-			// Create the ImageData object with the unique ID
-			data := &agriculture_service.ImageData{
-				Id:    int32(imageID),  // Assign the unique image ID
-				Image: imageData,
-			}
+	// Close the stream after processing the request
+	if err := stream.CloseSend(); err != nil {
+		log.Fatalf("Failed to close stream: %v", err)
+	}
 
-			// Send image to the server in a bidirectional stream
-			if err := stream.Send(data); err != nil {
-				log.Fatalf("Failed to send image data: %v", err)
-			}
-			log.Printf("Sent image data with ID %d", data.Id)
-
-			// Wait for the result from the server
-			res, err := stream.Recv()
-			if err == io.EOF {
-				// Server finished sending results
-				log.Println("Server closed the connection.")
-				break
-			}
-			if err != nil {
-				log.Fatalf("Failed to receive response: %v", err)
-			}
-
-			// Process and log the classification results
-			log.Printf("Received results for image ID %d:", res.Id)
-			for _, result := range res.Results {
-				log.Printf("Model: %s, Predicted Label: %s, Confidence: %.2f",
-					result.ModelName, result.PredictedLabel, result.ConfidenceScore)
-			}
-			log.Printf("Overall message: %s", res.OverallMessage)
-
-			// You can choose to send the next image here if needed
-			// Add a sleep or logic to send more images if necessary
-		}
-	}()
-
-	// Keep the main routine running until the stream is closed
-	select {}
+	// Optionally, exit the process after closing the connection
+	log.Println("Client finished processing the image. Exiting.")
 }
