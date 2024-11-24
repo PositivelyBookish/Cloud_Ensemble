@@ -8,11 +8,15 @@ Original file is located at
 """
 
 import os
+import warnings
 import torch
 from torch import nn
 from torchvision import transforms, models
 from PIL import Image
 import matplotlib.pyplot as plt
+
+warnings.filterwarnings("ignore")
+
 
 # Constants and parameters
 IMAGE_SIZE = 224  # MobileNetV3 uses 224x224 as its default input size

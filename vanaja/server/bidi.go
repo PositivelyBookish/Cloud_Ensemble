@@ -44,24 +44,31 @@ func classifyImageWithModel(imageData *agriculture_service.ImageData, modelName 
 		return "", 0, fmt.Errorf("failed to save image: %v", err)
 	}
 	log.Printf("Image saved")
-	defer os.Remove(imagePath) // Clean up the image file after classification
+	// defer os.Remove(imagePath) // Clean up the image file after classification
 
 	// Use Python to classify the image with the model
-	cmd := exec.Command("python3", fmt.Sprintf("model_script_%s.py", modelName), imagePath)
+	cmd := exec.Command("bash","-c", fmt.Sprintf("source ../.venv/bin/activate && python3 ../pyScripts/%s.py", modelName), imagePath)
 	output, err := cmd.CombinedOutput()
+	log.Printf("Command output: %s", output)
+
+	// log.Println("Error:    :()",err)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to classify image: %v", err)
 	}
+	log.Printf("%s.py executed",modelName)
 
 	// Parse the output (assuming it outputs "label confidence")
-	var predictedLabel string
-	var confidenceScore float32
-	_, err = fmt.Sscanf(string(output), "%s %f", &predictedLabel, &confidenceScore)
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to parse classification result: %v", err)
-	}
+	// var predictedLabel string
+	// var confidenceScore float32
+	// _, err = fmt.Sscanf(string(output), "%s %f", &predictedLabel, &confidenceScore)
+	// if err != nil {
+	// 	return "", 0, fmt.Errorf("failed to parse classification result: %v", err)
+	// }
 
-	return predictedLabel, confidenceScore, nil
+	// return predictedLabel, confidenceScore, nil
+	return "PlaceholderLabel", 0.0, nil // You can modify this as needed when you parse the result
+
+
 }
 
 // Implement the bidirectional streaming RPC method
@@ -81,7 +88,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 
 		// Process the image with each model
 		modelResults := make([]*agriculture_service.ModelResult, 0)
-		modelNames := []string{"model1", "model2", "model3"} // Replace with actual model names
+		modelNames := []string{"alexnet", "convnext_tiny", "mobilevnet"} // Replace with actual model names
 
 		for _, modelName := range modelNames {
 			// Classify the image with the current model

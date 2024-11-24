@@ -8,11 +8,15 @@ Original file is located at
 """
 
 import os
+import warnings
 import torch
 from torch import nn
 from torchvision import transforms, models
 from PIL import Image
 import matplotlib.pyplot as plt
+
+warnings.filterwarnings("ignore")
+
 
 # Constants and parameters
 IMAGE_SIZE = 80
@@ -27,6 +31,10 @@ classification_types = [
 ]
 
 model_path = '../models/AlexNet-model-80.pth'  # Update this path to your actual model file location
+if not os.path.exists(model_path):
+    print("Model file not found:", model_path)
+    exit(1)
+
 model = models.alexnet(pretrained=False)
 model.classifier[6] = nn.Linear(4096, 15)
 state_dict = torch.load(model_path, map_location=torch.device('cpu'))

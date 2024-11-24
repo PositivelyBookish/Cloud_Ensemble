@@ -8,10 +8,14 @@ Original file is located at
 """
 
 import torch
+import warnings
 from torch import nn
 from torchvision import transforms, models
 from torch.utils.data import DataLoader, Dataset
 from PIL import Image
+
+warnings.filterwarnings("ignore")
+
 
 # Constants and parameters
 IMAGE_SIZE = 224  # ConvNeXt-Tiny default input size
