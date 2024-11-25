@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"time"
+	"flag"
 
 	"database/sql"
 
@@ -31,7 +32,7 @@ func connectToDatabase() (*sql.DB, error) {
 
 // CustomListener is a wrapper around net.Listener to log client connections
 type CustomListener struct {
-	net.Listenerdefer
+	net.Listener
 }
 
 func (cl *CustomListener) Accept() (net.Conn, error) {
@@ -227,8 +228,12 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 }
 
 func main() {
+
+	port := flag.String("port", "50051", "The server port")
+	flag.Parse()
+
 	// Set up the server
-	listenAddress := "0.0.0.0:50051" // Change this to your server's address
+	listenAddress := fmt.Sprintf("0.0.0.0:%s", *port)
 	lis, err := net.Listen("tcp", listenAddress)
 	if err != nil {
 		log.Fatalf("Failed to listen on %v: %v", listenAddress, err)
