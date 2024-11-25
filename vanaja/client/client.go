@@ -55,7 +55,7 @@ func main() {
 	}
 
 	// Read and send the image
-	imagePath := "/home/harman/Desktop/cloud_project_copy2/Cloud_Computing_Project/vanaja/test_images/Tomato___Tomato_mosaic_virus.jpg"
+	imagePath := "/home/cloud-ensemble1/Desktop/bidi/Cloud_Computing_Project/vanaja/test_images/Tomato___Tomato_mosaic_virus.jpg"
 	imageData, err := readImageFile(imagePath)
 	if err != nil {
 		log.Fatalf("Failed to read image: %v", err)

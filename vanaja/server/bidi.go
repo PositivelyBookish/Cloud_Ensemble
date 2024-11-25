@@ -31,7 +31,7 @@ func connectToDatabase() (*sql.DB, error) {
 
 // CustomListener is a wrapper around net.Listener to log client connections
 type CustomListener struct {
-	net.Listener
+	net.Listenerdefer
 }
 
 func (cl *CustomListener) Accept() (net.Conn, error) {
@@ -55,7 +55,7 @@ func classifyImageWithModel(imageData *agriculture_service.ImageData, modelName 
 	log.Printf("Received image data of size: %d bytes for image ID: %d", len(imageData.Image), imageData.Id)
 
 	// Modify the imagePath to store it in the "Images" folder on your desktop
-	desktopPath := "/home/harman/Desktop/Images" // Adjust the username if necessary
+	desktopPath := "/home/cloud-ensemble1/Desktop/Images" // Adjust the username if necessary
 	imagePath := fmt.Sprintf("%s/temp_image_%d.jpg", desktopPath, imageData.Id)
 	// imagePath := fmt.Sprintf("/tmp/temp_image_%d.jpg", imageData.Id)
 	log.Printf("IMAGE LOCATION: %s", imagePath)
@@ -69,7 +69,7 @@ func classifyImageWithModel(imageData *agriculture_service.ImageData, modelName 
 
 	// Use Python to classify the image with the model
 	// cmd := exec.Command("bash", "-c", fmt.Sprintf("ls ../../../../cloud_project"))
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("source ../../../../cloud_project/venv/bin/activate && python3 ../pyScripts/%s.py", modelName), imagePath)
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("source ../.venv/bin/activate && python3 ../pyScripts/%s.py", modelName), imagePath)
 	output, err := cmd.CombinedOutput()
 	log.Printf("Command output: %s", output)
 
@@ -139,7 +139,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 		}
 
 		// Save the image to a specific location
-		updatedImagePath := fmt.Sprintf("/home/harman/Desktop/Images/temp_image_%d.jpg", imageData.Id)
+		updatedImagePath := fmt.Sprintf("/home/cloud-ensemble1/Desktop/Images/temp_image_%d.jpg", imageData.Id)
 		err = os.WriteFile(updatedImagePath, imageData.Image, 0644)
 		if err != nil {
 			return fmt.Errorf("failed to save image: %v", err)
