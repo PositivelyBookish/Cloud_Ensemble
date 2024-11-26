@@ -39,7 +39,7 @@ func readImageFile(imagePath string) ([]byte, error) {
 
 func main() {
 	// Set up the connection to the server
-	conn, err := grpc.Dial("localhost:8080", grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial("10.20.24.51:8080", grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
@@ -55,7 +55,7 @@ func main() {
 	}
 
 	// Read and send the image
-	imagePath := "/home/cloud-ensemble1/Desktop/bidi/Cloud_Computing_Project/vanaja/test_images/Tomato___Tomato_mosaic_virus.jpg"
+	imagePath := "../test_images/Tomato___Tomato_mosaic_virus.jpg"
 	imageData, err := readImageFile(imagePath)
 	if err != nil {
 		log.Fatalf("Failed to read image: %v", err)
