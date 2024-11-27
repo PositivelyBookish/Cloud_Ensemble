@@ -56,7 +56,7 @@ func classifyImageWithModel(imageData *agriculture_service.ImageData, modelName 
 	log.Printf("Received image data of size: %d bytes for image ID: %d", len(imageData.Image), imageData.Id)
 
 	// Modify the imagePath to store it in the "Images" folder on your desktop
-	desktopPath := "/home/cloud-ensemble1/Desktop/Images" // Adjust the username if necessary
+	desktopPath := "../Images" // Adjust the username if necessary
 	imagePath := fmt.Sprintf("%s/temp_image_%d.jpg", desktopPath, imageData.Id)
 	// imagePath := fmt.Sprintf("/tmp/temp_image_%d.jpg", imageData.Id)
 	log.Printf("IMAGE LOCATION: %s", imagePath)
@@ -140,7 +140,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 		}
 
 		// Save the image to a specific location
-		updatedImagePath := fmt.Sprintf("/home/cloud-ensemble1/Desktop/Images/temp_image_%d.jpg", imageData.Id)
+		updatedImagePath := fmt.Sprintf("../Images/temp_image_%d.jpg", imageData.Id)
 		err = os.WriteFile(updatedImagePath, imageData.Image, 0644)
 		if err != nil {
 			return fmt.Errorf("failed to save image: %v", err)
