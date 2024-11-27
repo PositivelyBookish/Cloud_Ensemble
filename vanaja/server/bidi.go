@@ -70,7 +70,7 @@ func classifyImageWithModel(imageData *agriculture_service.ImageData, modelName 
 
 	// Use Python to classify the image with the model
 	// cmd := exec.Command("bash", "-c", fmt.Sprintf("ls ../../../../cloud_project"))
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("source ../.venv/bin/activate && python3 ../pyScripts/%s.py", modelName), imagePath)
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("source ../.venv/bin/activate && python3 ../pyScripts/%s.py %s", modelName, imagePath))
 	output, err := cmd.CombinedOutput()
 	log.Printf("Command output: %s", output)
 
