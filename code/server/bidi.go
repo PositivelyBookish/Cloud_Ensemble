@@ -1,7 +1,7 @@
 package main
 
 import (
-	agriculture_service "Project/vanaja/protobuf/proto" // Correct import path
+	agriculture_service "Project/code/protobuf/proto" // Correct import path
 	"fmt"
 	"io"
 	"log"

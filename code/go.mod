@@ -1,5 +1,5 @@
 // module github.com/hjani-2003/Cloud_Computing_Project/tree/vanaja/vanaja/proto
-module Project/vanaja
+module Project/code
 
 go 1.23.1
 
