@@ -1,0 +1,29 @@
+syntax = "proto3";
+option go_package = "./proto";
+package agriculture_service;
+
+// Service definition
+service ImageClassificationService {
+  // Bidirectional streaming RPC
+  rpc ClassifyImage(stream ImageData) returns (stream ClassificationResults);
+}
+ 
+// Message for image input
+message ImageData {
+  int32 id = 1;         // Unique request ID
+  bytes image = 2;      // Binary data for the image
+}
+
+// Message for results from a single model
+message ModelResult {
+  string model_name = 1;      // Name of the classification model
+  string predicted_label = 2; // Predicted label (e.g., disease name)
+  float confidence_score = 3; // Confidence score of the prediction
+}
+
+// Message for returning results from all models
+message ClassificationResults {
+  int32 id = 1;                  // Matches the ID from ImageData for tracking
+  repeated ModelResult results = 2; // List of results, one per model
+  string overall_message = 3;    // Summary message
+}
