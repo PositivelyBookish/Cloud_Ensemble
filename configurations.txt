@@ -50,3 +50,10 @@ sudo rabbitmq-plugins enable rabbitmq_management
 
 username: guest
 password: guest
+
+ls /etc/rabbitmq/
+sudo nano /etc/rabbitmq/rabbitmq.conf
+listeners.tcp.default = 5672
+management.tcp.port = 15672
+loopback_users.guest = false
+sudo systemctl restart rabbitmq-server
