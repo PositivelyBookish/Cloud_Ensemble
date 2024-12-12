@@ -3,14 +3,15 @@ package main
 import (
 	agriculture_service "Project/code/protobuf/proto" // Correct import path
 	"fmt"
-	"io"
+	"encoding/json"
 	"log"
 	"net"
 	"os"
 	"os/exec"
 	"time"
 	"flag"
-
+	"net/http"
+	"io"
 	"database/sql"
 
 	_ "github.com/lib/pq"
@@ -227,12 +228,78 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 	}
 }
 
-func main() {
+// Handle image classification via HTTP POST request
+func classifyImageHandler(w http.ResponseWriter, r *http.Request) {
+	// Ensure it's a POST request
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
 
+	// Parse the image file from the form data
+	err := r.ParseMultipartForm(10 << 20) // Limit to 10 MB
+	if err != nil {
+		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+		return
+	}
+
+	// Get the file from the form
+	file, _, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "Unable to get image from form", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Read the image file into a byte slice
+	imageData, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Unable to read image", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate a unique image ID (in a real-world app, use a proper method)
+	imageID := time.Now().Unix()
+
+	// Call the classifyImageWithModel function with the model names
+	// For simplicity, using the same models as before
+	modelNames := []string{"alexnet", "convnext_tiny", "mobilevnet"} 
+	var modelResults []*agriculture_service.ModelResult
+	for _, modelName := range modelNames {
+		// Call the model classification function
+		label, confidence, err := classifyImageWithModel(imageData, modelName)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error classifying image with model %s: %v", modelName, err), http.StatusInternalServerError)
+			return
+		}
+
+		// Append result for each model
+		modelResults = append(modelResults, &agriculture_service.ModelResult{
+			ModelName:       modelName,
+			PredictedLabel:  label,
+			ConfidenceScore: confidence,
+		})
+	}
+
+	// Prepare the classification results response
+	response := &agriculture_service.ClassificationResults{
+		Id:             int32(imageID),
+		Results:        modelResults,
+		OverallMessage: "Image classification completed successfully.",
+	}
+
+	// Convert the response to JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+
+func main() {
+	// Setup gRPC server
 	port := flag.String("port", "50051", "The server port")
 	flag.Parse()
 
-	// Set up the server
+	// Set up the gRPC server
 	listenAddress := fmt.Sprintf("0.0.0.0:%s", *port)
 	lis, err := net.Listen("tcp", listenAddress)
 	if err != nil {
@@ -246,9 +313,21 @@ func main() {
 	s := grpc.NewServer()
 	agriculture_service.RegisterImageClassificationServiceServer(s, &server{})
 
-	// Start the server
-	log.Printf("Server listening on %v", listenAddress)
-	if err := s.Serve(customLis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+	// Start the gRPC server in a goroutine
+	go func() {
+		log.Printf("gRPC Server listening on %v", listenAddress)
+		if err := s.Serve(customLis); err != nil {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+	}()
+
+	// HTTP handler for image classification via HTTP POST
+	http.HandleFunc("/classify", classifyImageHandler)
+
+	// Start the HTTP server for image classification (listening on port 8080)
+	log.Printf("HTTP Server listening on port 8080")
+	err = http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatalf("Failed to start HTTP server: %v", err)
 	}
 }
