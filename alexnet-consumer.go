@@ -29,16 +29,19 @@ func classifyImageWithModel1(imageLocationId string, ch *amqp.Channel) error {
 
 	var predictedLabel string
 	var confidenceScore float32
-
-	_, err = fmt.Sscanf(string(output), "Predicted Class: %s\nConfidence: %f%%", &predictedLabel, &confidenceScore)
+	var executedTime float32
+	// fmt.Println("yoyoyoyoyyo")
+	_, err = fmt.Sscanf(string(output), "Predicted Class: %s\nConfidence: %f%%\nExecution Time: %f", &predictedLabel, &confidenceScore, &executedTime)
 	if err != nil {
 		return fmt.Errorf("failed to parse classification result: %v", err)
 	}
+	// fmt.Println("sososososososo")
 
 	confidenceScore = confidenceScore / 100.0
 
 	// Create the concatenated string message
-	messageBody := fmt.Sprintf("%d %s %.2f", id, predictedLabel, confidenceScore)
+	messageBody := fmt.Sprintf("%d %s %.2f %.2f", id, predictedLabel, confidenceScore, executedTime)
+	fmt.Println(messageBody)
 
 	q, err := ch.QueueDeclare(
 		"AlexnetResultQueue",

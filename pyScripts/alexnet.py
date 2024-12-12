@@ -8,6 +8,7 @@ import torch
 from torch import nn
 from torchvision import transforms, models
 from PIL import Image
+import time  # Import time module
 
 warnings.filterwarnings("ignore")
 
@@ -22,6 +23,9 @@ classification_types = [
     'Tomato__Tomato_YellowLeaf__Curl_Virus', 'Tomato__Tomato_mosaic_virus',
     'Tomato_healthy'
 ]
+
+# Measure the start time
+start_time = time.time()
 
 # Ensure the model file exists
 model_path = './models/AlexNet-model-80.pth'  # Update this path to your actual model file location
@@ -77,3 +81,8 @@ predicted_label = classification_types[predicted_class.item()]
 # Print the result
 print(f"Predicted Class: {predicted_label}")
 print(f"Confidence: {confidence:.2%}")
+
+# Measure the end time and print the duration
+end_time = time.time()
+execution_time = end_time - start_time
+print(f"Execution Time: {execution_time:.2}")

@@ -29,8 +29,9 @@ func classifyImageWithModel2(imageLocationId string, ch *amqp.Channel) error {
 
 	var predictedLabel string
 	var confidenceScore float32
+	var executedTime float32
 
-	_, err = fmt.Sscanf(string(output), "Predicted Class: %s\nConfidence: %f%%", &predictedLabel, &confidenceScore)
+	_, err = fmt.Sscanf(string(output), "Predicted Class: %s\nConfidence: %f%%\nExecution Time: %f", &predictedLabel, &confidenceScore, &executedTime)
 	if err != nil {
 		return fmt.Errorf("failed to parse classification result: %v", err)
 	}
@@ -38,7 +39,8 @@ func classifyImageWithModel2(imageLocationId string, ch *amqp.Channel) error {
 	confidenceScore = confidenceScore / 100.0
 
 	// Create the concatenated string message
-	messageBody := fmt.Sprintf("%d %s %.2f", id, predictedLabel, confidenceScore)
+	messageBody := fmt.Sprintf("%d %s %.2f %.2f", id, predictedLabel, confidenceScore, executedTime)
+	fmt.Println(messageBody)
 
 	q, err := ch.QueueDeclare(
 		"MobilevnetResultQueue",

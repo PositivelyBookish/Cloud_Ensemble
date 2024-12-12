@@ -39,7 +39,7 @@ func readImageFile(imagePath string) ([]byte, error) {
 
 func main() {
 	// Set up the connection to the server
-	conn, err := grpc.Dial("0.0.0.0:8080", grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial("0.0.0.0:50051", grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}

@@ -42,6 +42,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 	var ipAddress string
 	var requestReceivedTime string
 	var predictedValueModel1, predictedValueModel2, predictedValueModel3 string
+	var time_taken_model_1, time_taken_model_2, time_taken_model_3 float32
 	var confidenceModel1, confidenceModel2, confidenceModel3 float32
 	var status int
 	var responseSentTime string
@@ -159,7 +160,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 
 		imageID := time.Now().Unix()
 		// Create the concatenated string message
-		messageBody := fmt.Sprintf("%s %d", "./Images/temp_image_1733764561.jpg", imageID)
+		messageBody := fmt.Sprintf("%s%d%s %d", "./Images/temp_image_", imageData.Id, ".jpg", imageID)
 		fmt.Println("this")
 		fmt.Println(messageBody)
 		fmt.Println("this")
@@ -228,9 +229,10 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 				var id int
 				var label string
 				var confidence float32
+				var executedTime float32
 
 				// Parse the message using fmt.Sscanf
-				_, err := fmt.Sscanf(string(d.Body), "%d %s %f", &id, &label, &confidence)
+				_, err := fmt.Sscanf(string(d.Body), "%d %s %f %f", &id, &label, &confidence, &executedTime)
 				if err != nil {
 					log.Fatalf("Failed to parse message: %v", err)
 				}
@@ -242,6 +244,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 				})
 				predictedValueModel1 = label
 				confidenceModel1 = confidence
+				time_taken_model_1 = executedTime
 				if id == int(imageID) {
 					fmt.Println("Exit message received. Closing application...")
 					forever <- true // Send a signal to unblock the main thread
@@ -275,9 +278,10 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 				var id int
 				var label string
 				var confidence float32
+				var executedTime float32
 
 				// Parse the message using fmt.Sscanf
-				_, err := fmt.Sscanf(string(d.Body), "%d %s %f", &id, &label, &confidence)
+				_, err := fmt.Sscanf(string(d.Body), "%d %s %f %f", &id, &label, &confidence, &executedTime)
 				if err != nil {
 					log.Fatalf("Failed to parse message: %v", err)
 				}
@@ -290,6 +294,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 				})
 				predictedValueModel3 = label
 				confidenceModel3 = confidence
+				time_taken_model_2 = executedTime
 
 				if id == int(imageID) {
 					fmt.Println("Exit message received. Closing application...")
@@ -324,9 +329,10 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 				var id int
 				var label string
 				var confidence float32
+				var executedTime float32
 
 				// Parse the message using fmt.Sscanf
-				_, err := fmt.Sscanf(string(d.Body), "%d %s %f", &id, &label, &confidence)
+				_, err := fmt.Sscanf(string(d.Body), "%d %s %f %f", &id, &label, &confidence, &executedTime)
 				if err != nil {
 					log.Fatalf("Failed to parse message: %v", err)
 				}
@@ -340,6 +346,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 
 				predictedValueModel2 = label
 				confidenceModel2 = confidence
+				time_taken_model_3 = executedTime
 
 				if id == int(imageID) {
 					fmt.Println("Exit message received. Closing application...")
@@ -363,16 +370,20 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 		}
 
 		responseSentTime = time.Now().Format(time.RFC3339)
+		status = 1
 		// Create the concatenated string
-		message := fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f %d %s %s",
+		message := fmt.Sprintf("%s %s %s %.2f %.2f %s %.2f %.2f %s %.2f %.2f %d %s %s",
 			ipAddress,
 			requestReceivedTime,
 			predictedValueModel1,
 			confidenceModel1,
+			time_taken_model_1,
 			predictedValueModel2,
 			confidenceModel2,
+			time_taken_model_2,
 			predictedValueModel3,
 			confidenceModel3,
+			time_taken_model_3,
 			status,
 			responseSentTime,
 			imageLocation,

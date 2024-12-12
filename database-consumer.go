@@ -9,6 +9,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// 10.1.56.109
 func connectToDatabase() (*sql.DB, error) {
 	connStr := "user=postgres dbname=cloudproject password=postgres host=localhost sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
@@ -51,7 +52,8 @@ func main() {
 			var ipAddress string
 			var requestReceivedTime string
 			var predictedValueModel1, predictedValueModel2, predictedValueModel3 string
-			var confidenceModel1, confidenceModel2, confidenceModel3 float64
+			var time_taken_model_1, time_taken_model_2, time_taken_model_3 float32
+			var confidenceModel1, confidenceModel2, confidenceModel3 float32
 			var status string
 			var responseSentTime string
 			var imageLocation string
@@ -59,15 +61,18 @@ func main() {
 			// Parse the message using fmt.Sscanf
 			_, err := fmt.Sscanf(
 				string(d.Body),
-				"%s %s %s %f %s %f %s %f %s %s %s",
+				"%s %s %s %f %f %s %f %f %s %f %f %s %s %s",
 				&ipAddress,
 				&requestReceivedTime,
 				&predictedValueModel1,
 				&confidenceModel1,
+				&time_taken_model_1,
 				&predictedValueModel2,
 				&confidenceModel2,
+				&time_taken_model_2,
 				&predictedValueModel3,
 				&confidenceModel3,
+				&time_taken_model_3,
 				&status,
 				&responseSentTime,
 				&imageLocation,
@@ -83,8 +88,8 @@ func main() {
 			}
 			defer db.Close()
 			insertSQL := `
-            INSERT INTO image_requests (ip_address, request_received_time, predicted_value_model_1, confidence_model_1, predicted_value_model_2, confidence_model_2, predicted_value_model_3, confidence_model_3, status, response_sent_time, image_location)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            INSERT INTO image_requests (ip_address, request_received_time, predicted_value_model_1, confidence_model_1, predicted_value_model_2, confidence_model_2, predicted_value_model_3, confidence_model_3, status, response_sent_time, image_location, time_taken_model_1, time_taken_model_2, time_taken_model_3)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING id`
 			var requestID int
 			err = db.QueryRow(insertSQL, ipAddress,
@@ -97,7 +102,10 @@ func main() {
 				confidenceModel3,
 				status,
 				responseSentTime,
-				imageLocation).Scan(&requestID)
+				imageLocation,
+				time_taken_model_1,
+				time_taken_model_2,
+				time_taken_model_3).Scan(&requestID)
 			if err != nil {
 				fmt.Print("failed to insert metadata: %v", err)
 			}
