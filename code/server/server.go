@@ -2,17 +2,17 @@ package main
 
 import (
 	agriculture_service "Project/code/protobuf/proto" // Correct import path
-	"fmt"
+	"database/sql"
 	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"time"
-	"flag"
-	"net/http"
-	"io"
-	"database/sql"
 
 	_ "github.com/lib/pq"
 
@@ -229,6 +229,7 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 }
 
 // Handle image classification via HTTP POST request
+// Handle image classification via HTTP POST request
 func classifyImageHandler(w http.ResponseWriter, r *http.Request) {
 	// Ensure it's a POST request
 	if r.Method != http.MethodPost {
@@ -236,10 +237,17 @@ func classifyImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check that the Content-Type is multipart/form-data
+	if !isMultipartForm(r) {
+		http.Error(w, "Invalid Content-Type, expected multipart/form-data", http.StatusBadRequest)
+		return
+	}
+
 	// Parse the image file from the form data
 	err := r.ParseMultipartForm(10 << 20) // Limit to 10 MB
 	if err != nil {
 		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+		log.Printf("Error parsing form: %v", err)
 		return
 	}
 
@@ -247,33 +255,41 @@ func classifyImageHandler(w http.ResponseWriter, r *http.Request) {
 	file, _, err := r.FormFile("image")
 	if err != nil {
 		http.Error(w, "Unable to get image from form", http.StatusBadRequest)
+		log.Printf("Error retrieving image from form: %v", err)
 		return
 	}
 	defer file.Close()
 
 	// Read the image file into a byte slice
-	imageData, err := io.ReadAll(file)
+	imageBytes, err := io.ReadAll(file)
 	if err != nil {
 		http.Error(w, "Unable to read image", http.StatusInternalServerError)
+		log.Printf("Error reading image: %v", err)
 		return
 	}
 
-	// Generate a unique image ID (in a real-world app, use a proper method)
+	// Generate a unique image ID (for simplicity, using a timestamp)
 	imageID := time.Now().Unix()
 
-	// Call the classifyImageWithModel function with the model names
-	// For simplicity, using the same models as before
-	modelNames := []string{"alexnet", "convnext_tiny", "mobilevnet"} 
+	// Create an ImageData object
+	imageData := &agriculture_service.ImageData{
+		Id:    int32(imageID),
+		Image: imageBytes,
+	}
+
+	// Call the classifyImageWithModel function for each model
+	modelNames := []string{"alexnet", "convnext_tiny", "mobilevnet"}
 	var modelResults []*agriculture_service.ModelResult
+
 	for _, modelName := range modelNames {
-		// Call the model classification function
+		// Call the classification function
 		label, confidence, err := classifyImageWithModel(imageData, modelName)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error classifying image with model %s: %v", modelName, err), http.StatusInternalServerError)
 			return
 		}
 
-		// Append result for each model
+		// Append the result for each model
 		modelResults = append(modelResults, &agriculture_service.ModelResult{
 			ModelName:       modelName,
 			PredictedLabel:  label,
@@ -281,9 +297,9 @@ func classifyImageHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// Prepare the classification results response
+	// Prepare the response
 	response := &agriculture_service.ClassificationResults{
-		Id:             int32(imageID),
+		Id:             imageData.Id,
 		Results:        modelResults,
 		OverallMessage: "Image classification completed successfully.",
 	}
@@ -293,6 +309,10 @@ func classifyImageHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// Check if the Content-Type is multipart/form-data
+func isMultipartForm(r *http.Request) bool {
+	return r.Header.Get("Content-Type")[:19] == "multipart/form-data"
+}
 
 func main() {
 	// Setup gRPC server
@@ -321,12 +341,12 @@ func main() {
 		}
 	}()
 
-	// HTTP handler for image classification via HTTP POST
+	// HTTP handler for image classification with CORS headers
 	http.HandleFunc("/classify", classifyImageHandler)
 
-	// Start the HTTP server for image classification (listening on port 8080)
-	log.Printf("HTTP Server listening on port 8080")
-	err = http.ListenAndServe(":8080", nil)
+	// Start the HTTP server for image classification (listening on port 8082)
+	log.Printf("HTTP Server listening on port 8082")
+	err = http.ListenAndServe(":8082", nil)
 	if err != nil {
 		log.Fatalf("Failed to start HTTP server: %v", err)
 	}
