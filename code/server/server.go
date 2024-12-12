@@ -228,86 +228,86 @@ func (s *server) ClassifyImage(stream agriculture_service.ImageClassificationSer
 	}
 }
 
-// Handle image classification via HTTP POST request
-// Handle image classification via HTTP POST request
 func classifyImageHandler(w http.ResponseWriter, r *http.Request) {
-	// Ensure it's a POST request
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
+    // Ensure it's a POST request
+    if r.Method != http.MethodPost {
+        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+        return
+    }
 
-	// Check that the Content-Type is multipart/form-data
-	if !isMultipartForm(r) {
-		http.Error(w, "Invalid Content-Type, expected multipart/form-data", http.StatusBadRequest)
-		return
-	}
+    // Check that the Content-Type is multipart/form-data
+    if !isMultipartForm(r) {
+        http.Error(w, "Invalid Content-Type, expected multipart/form-data", http.StatusBadRequest)
+        return
+    }
 
-	// Parse the image file from the form data
-	err := r.ParseMultipartForm(10 << 20) // Limit to 10 MB
-	if err != nil {
-		http.Error(w, "Unable to parse form", http.StatusBadRequest)
-		log.Printf("Error parsing form: %v", err)
-		return
-	}
+    // Parse the image file from the form data
+    err := r.ParseMultipartForm(10 << 20) // Limit to 10 MB
+    if err != nil {
+        http.Error(w, "Unable to parse form", http.StatusBadRequest)
+        log.Printf("Error parsing form: %v", err)
+        return
+    }
 
-	// Get the file from the form
-	file, _, err := r.FormFile("image")
-	if err != nil {
-		http.Error(w, "Unable to get image from form", http.StatusBadRequest)
-		log.Printf("Error retrieving image from form: %v", err)
-		return
-	}
-	defer file.Close()
+    // Get the file from the form
+    file, _, err := r.FormFile("image")
+    if err != nil {
+        http.Error(w, "Unable to get image from form", http.StatusBadRequest)
+        log.Printf("Error retrieving image from form: %v", err)
+        return
+    }
+    defer file.Close()
 
-	// Read the image file into a byte slice
-	imageBytes, err := io.ReadAll(file)
-	if err != nil {
-		http.Error(w, "Unable to read image", http.StatusInternalServerError)
-		log.Printf("Error reading image: %v", err)
-		return
-	}
+    // Read the image file into a byte slice
+    imageBytes, err := io.ReadAll(file)
+    if err != nil {
+        http.Error(w, "Unable to read image", http.StatusInternalServerError)
+        log.Printf("Error reading image: %v", err)
+        return
+    }
 
-	// Generate a unique image ID (for simplicity, using a timestamp)
-	imageID := time.Now().Unix()
+    // Generate a unique image ID (for simplicity, using a timestamp)
+    imageID := time.Now().Unix()
 
-	// Create an ImageData object
-	imageData := &agriculture_service.ImageData{
-		Id:    int32(imageID),
-		Image: imageBytes,
-	}
+    // Create an ImageData object
+    imageData := &agriculture_service.ImageData{
+        Id:    int32(imageID),
+        Image: imageBytes,
+    }
 
-	// Call the classifyImageWithModel function for each model
-	modelNames := []string{"alexnet", "convnext_tiny", "mobilevnet"}
-	var modelResults []*agriculture_service.ModelResult
+    // Call the classifyImageWithModel function for each model
+    modelNames := []string{"alexnet", "convnext_tiny", "mobilevnet"}
+    var modelResults []*agriculture_service.ModelResult
 
-	for _, modelName := range modelNames {
-		// Call the classification function
-		label, confidence, err := classifyImageWithModel(imageData, modelName)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error classifying image with model %s: %v", modelName, err), http.StatusInternalServerError)
-			return
-		}
+    for _, modelName := range modelNames {
+        // Call the classification function
+        label, confidence, err := classifyImageWithModel(imageData, modelName)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Error classifying image with model %s: %v", modelName, err), http.StatusInternalServerError)
+            return
+        }
 
-		// Append the result for each model
-		modelResults = append(modelResults, &agriculture_service.ModelResult{
-			ModelName:       modelName,
-			PredictedLabel:  label,
-			ConfidenceScore: confidence,
-		})
-	}
+        // Append the result for each model
+        modelResults = append(modelResults, &agriculture_service.ModelResult{
+            ModelName:       modelName,
+            PredictedLabel:  label,
+            ConfidenceScore: confidence,
+        })
+    }
 
-	// Prepare the response
-	response := &agriculture_service.ClassificationResults{
-		Id:             imageData.Id,
-		Results:        modelResults,
-		OverallMessage: "Image classification completed successfully.",
-	}
+    // Prepare the response in the format expected by the frontend
+    response := map[string]interface{}{
+        "PredictedClass":  modelResults[0].PredictedLabel, // Or iterate and handle multiple models
+        "Confidence":      modelResults[0].ConfidenceScore,
+        "OverallMessage":   "Image classification completed successfully.",
+    }
 
-	// Convert the response to JSON
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+    // Send the JSON response
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
+
+
 
 // Check if the Content-Type is multipart/form-data
 func isMultipartForm(r *http.Request) bool {
