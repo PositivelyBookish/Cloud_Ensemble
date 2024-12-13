@@ -1,0 +1,90 @@
+/* General Reset */
+body, h1, h2, p {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body Styling */
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* Header Styling */
+h1 {
+    font-size: 2.5rem;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+    margin-bottom: 20px;
+}
+
+/* Form Styling */
+form {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+input[type="file"] {
+    padding: 10px;
+    border: 2px dashed #fda085;
+    border-radius: 6px;
+    background-color: #fff9f4;
+    color: #333;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    outline: none;
+    cursor: pointer;
+}
+
+input[type="file"]:hover {
+    border-color: #f6d365;
+}
+
+button {
+    background-color: #fda085;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #f6d365;
+}
+
+/* Result Styling */
+#result {
+    margin-top: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+}
+
+#result p {
+    margin: 5px 0;
+    font-size: 1rem;
+}
