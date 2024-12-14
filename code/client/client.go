@@ -1,13 +1,20 @@
 package main
 
 import (
-	agriculture_service "Project/code/protobuf/proto" // Correct import path
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	agriculture_service "Project/code/protobuf/proto" // Correct import path
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 
 	"google.golang.org/grpc"
 )
@@ -20,7 +27,6 @@ func readImageFile(imagePath string) ([]byte, error) {
 	}
 	defer file.Close()
 
-	// Read the entire file into a byte slice
 	fileInfo, err := file.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get file info: %w", err)
@@ -39,65 +45,98 @@ func readImageFile(imagePath string) ([]byte, error) {
 
 func main() {
 	// Set up the connection to the server
-	conn, err := grpc.Dial("localhost:8080", grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
-	defer conn.Close() // Ensure the connection is closed when done
+	defer conn.Close()
 	log.Println("Successfully connected to the server at 0.0.0.0:50051")
 
 	client := agriculture_service.NewImageClassificationServiceClient(conn)
 
-	// Open a bidirectional stream
-	stream, err := client.ClassifyImage(context.Background())
-	if err != nil {
-		log.Fatalf("Error creating stream: %v", err)
-	}
+	// Create a Fyne app
+	myApp := app.New()
+	myWindow := myApp.NewWindow("Crop Image Classification")
 
-	// Read and send the image
-	imagePath := "../test_images/Tomato___Tomato_mosaic_virus.jpg"
-	imageData, err := readImageFile(imagePath)
-	if err != nil {
-		log.Fatalf("Failed to read image: %v", err)
-	}
+	// Create UI elements
+	label := widget.NewLabel("Select an image to classify")
+	selectImageButton := widget.NewButton("Select Image", func() {
+		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil {
+				dialog.ShowError(err, myWindow)
+				return
+			}
+			if reader == nil {
+				return // User cancelled the dialog
+			}
 
-	// Generate a unique ID (e.g., using timestamp or a counter)
-	imageID := time.Now().Unix()
+			imagePath := reader.URI().Path()
+			log.Printf("Selected image: %s", imagePath)
 
-	// Create the ImageData object with the unique ID
-	data := &agriculture_service.ImageData{
-		Id:    int32(imageID),
-		Image: imageData,
-	}
+			// Read and send the image to the server
+			imageData, err := readImageFile(imagePath)
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("Failed to read image: %v", err), myWindow)
+				return
+			}
 
-	// Send image data to the server
-	if err := stream.Send(data); err != nil {
-		log.Fatalf("Failed to send image data: %v", err)
-	}
-	log.Printf("Sent image data with ID %d", data.Id)
+			// Open a bidirectional stream
+			stream, err := client.ClassifyImage(context.Background())
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("Error creating stream: %v", err), myWindow)
+				return
+			}
 
-	// Wait for the result from the server
-	res, err := stream.Recv()
-	if err == io.EOF {
-		// Server finished sending results
-		log.Println("Server closed the connection.")
-	} else if err != nil {
-		log.Fatalf("Failed to receive response: %v", err)
-	} else {
-		// Process and log the classification results
-		log.Printf("Received results for image ID %d:", res.Id)
-		for _, result := range res.Results {
-			log.Printf("Model: %s, Predicted Label: %s, Confidence: %.2f",
-				result.ModelName, result.PredictedLabel, result.ConfidenceScore)
-		}
-		log.Printf("Overall message: %s", res.OverallMessage)
-	}
+			// Generate a unique ID (e.g., using timestamp or a counter)
+			imageID := time.Now().Unix()
 
-	// Close the stream after processing the request
-	if err := stream.CloseSend(); err != nil {
-		log.Fatalf("Failed to close stream: %v", err)
-	}
+			// Create the ImageData object with the unique ID
+			data := &agriculture_service.ImageData{
+				Id:    int32(imageID),
+				Image: imageData,
+			}
 
-	// Optionally, exit the process after closing the connection
-	log.Println("Client finished processing the image. Exiting.")
+			// Send image data to the server
+			if err := stream.Send(data); err != nil {
+				dialog.ShowError(fmt.Errorf("Failed to send image data: %v", err), myWindow)
+				return
+			}
+			log.Printf("Sent image data with ID %d", data.Id)
+
+			// Wait for the result from the server
+			res, err := stream.Recv()
+			if err == io.EOF {
+				// Server finished sending results
+				log.Println("Server closed the connection.")
+			} else if err != nil {
+				dialog.ShowError(fmt.Errorf("Failed to receive response: %v", err), myWindow)
+				return
+			} else {
+				// Process and display the classification results
+				results := fmt.Sprintf("Results for image ID %d:\n", res.Id)
+				for _, result := range res.Results {
+					results += fmt.Sprintf("Model: %s, Predicted Label: %s, Confidence: %.2f\n",
+						result.ModelName, result.PredictedLabel, result.ConfidenceScore)
+				}
+				results += fmt.Sprintf("Overall message: %s", res.OverallMessage)
+				dialog.ShowInformation("Classification Results", results, myWindow)
+			}
+
+			// Close the stream after processing the request
+			if err := stream.CloseSend(); err != nil {
+				dialog.ShowError(fmt.Errorf("Failed to close stream: %v", err), myWindow)
+				return
+			}
+		}, myWindow)
+	})
+
+	// Arrange UI elements in a vertical layout
+	content := container.NewVBox(
+		label,
+		selectImageButton,
+	)
+
+	myWindow.SetContent(content)
+	myWindow.Resize(fyne.NewSize(400, 300))
+	myWindow.ShowAndRun()
 }
