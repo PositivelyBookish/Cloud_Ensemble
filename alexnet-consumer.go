@@ -96,7 +96,7 @@ func main() {
 		panic(err)
 	}
 	defer ch.Close()
-
+ 
 	msgs, err := ch.Consume(
 		"AlexnetQueue",
 		"",

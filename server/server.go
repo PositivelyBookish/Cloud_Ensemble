@@ -2,6 +2,7 @@ package main
 
 import (
 	agriculture_service "Project/testing-rabbit/protobuf/proto" // Correct import path
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"context"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -28,35 +28,32 @@ type CustomListener struct {
 }
 
 type mockImageStream struct {
-    grpc.ServerStream
-    reqChan  chan *agriculture_service.ImageData
-    respChan chan *agriculture_service.ClassificationResults
+	grpc.ServerStream
+	reqChan  chan *agriculture_service.ImageData
+	respChan chan *agriculture_service.ClassificationResults
 }
-
 
 func (m *mockImageStream) Context() context.Context {
-    // Create a mock peer with an address
-    ctx := context.Background()
-    p := &peer.Peer{
-        Addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 50051}, // mock IP and port
-    }
-    return peer.NewContext(ctx, p)
+	// Create a mock peer with an address
+	ctx := context.Background()
+	p := &peer.Peer{
+		Addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 50051}, // mock IP and port
+	}
+	return peer.NewContext(ctx, p)
 }
 
-
 func (m *mockImageStream) Send(res *agriculture_service.ClassificationResults) error {
-    m.respChan <- res
-    return nil
+	m.respChan <- res
+	return nil
 }
 
 func (m *mockImageStream) Recv() (*agriculture_service.ImageData, error) {
-    req, ok := <-m.reqChan
-    if !ok {
-        return nil, io.EOF
-    }
-    return req, nil
+	req, ok := <-m.reqChan
+	if !ok {
+		return nil, io.EOF
+	}
+	return req, nil
 }
-
 
 func (cl *CustomListener) Accept() (net.Conn, error) {
 	conn, err := cl.Listener.Accept()
@@ -550,13 +547,126 @@ func classifyImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 // Check if the Content-Type is multipart/form-data
 func isMultipartForm(r *http.Request) bool {
 	return r.Header.Get("Content-Type")[:19] == "multipart/form-data"
 }
 
 func main() {
+	fmt.Println("Go consumer rabbitmq ")
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	defer conn.Close()
+
+	fmt.Println("Successfully connected to rabbitMQ instance")
+	ch, err := conn.Channel()
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	defer ch.Close()
+
+	q0, err := ch.QueueDeclare(
+		"DbLogQueue",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println(q0)
+
+	q1, err := ch.QueueDeclare(
+		"AlexnetQueue",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println(q1)
+
+	q2, err := ch.QueueDeclare(
+		"AlexnetResultQueue",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println(q2)
+
+	q3, err := ch.QueueDeclare(
+		"MobilevnetQueue",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println(q3)
+
+	q4, err := ch.QueueDeclare(
+		"MobilevnetResultQueue",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println(q4)
+
+	q5, err := ch.QueueDeclare(
+		"Convnext_tinyQueue",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println(q5)
+
+	q6, err := ch.QueueDeclare(
+		"Convnext_tinyResultQueue",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println(q6)
+
 	// Setup gRPC server
 	port := flag.String("port", "50051", "The server port")
 	flag.Parse()
